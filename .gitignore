@@ -1,0 +1,6 @@
+testing_CyTRACK/data/
+testing_CyTRACK/hurdat2-atl-02052024.txt
+src/build/
+src/cytrack.egg-info/
+__pycache__/
+*.pyc

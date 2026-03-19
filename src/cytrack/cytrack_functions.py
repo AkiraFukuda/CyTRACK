@@ -2462,8 +2462,15 @@ def convert_era5_matrix(matrix,lon,search_lon):
 	Returns:
 		tuple: A tuple containing the shifted matrix and the associated longitude array.
 	"""
-	index=np.where(lon==search_lon)
-	index=int(index[0])
+	idx = np.where(np.isclose(lon, search_lon))
+	# np.where 对 1D 返回 (array([...]),)，对 2D 返回 (array([...]), array([...]))
+	# 我们只需要第一个维度的第一个命中位置
+	idx0 = idx[0]
+	if idx0.size == 0:
+		raise ValueError(f"Longitude {search_lon} not found in ERA5 lon array (min={lon.min()}, max={lon.max()})")
+	index = int(idx0.ravel()[0])
+
+
 	aux_matrix=np.empty_like(matrix)
 	aux_matrix[:,:index]=matrix[:,index:]
 	aux_matrix[:,index:]=matrix[:,2:index+2]
@@ -5111,7 +5118,9 @@ def compute_roci_RU(latc=None,
 			if len(ind[0])>1:
 				ind=int(ind[0][-1])
 			else:
-				ind=int(ind[0])
+				# ind is from np.where(...); convert to scalar safely
+				ind = int(np.asarray(ind[0]).ravel()[0])
+
 			critical_lat=np.append(critical_lat,latp[i,ind])
 			critical_lon=np.append(critical_lon,lonp[i,ind])
 
@@ -5446,7 +5455,7 @@ def compute_VT_series(dates=np.array([None]),
 		yhat1 = model.predict(X1)
 		reg = LinearRegression().fit(X1, y1)
 		coef1=reg.coef_
-		VTL_series.append(int(coef1))
+		VTL_series.append(int(np.asarray(coef1).squeeze()))  # debugged
 		
 		
 		X2 = np.reshape(lnP2, (len(lnP2), 1))
@@ -5456,7 +5465,8 @@ def compute_VT_series(dates=np.array([None]),
 		yhat2 = model.predict(X2)
 		reg = LinearRegression().fit(X2, y2)
 		coef2=reg.coef_
-		VTU_series.append(int(coef2))
+		VTU_series.append(int(np.asarray(coef2).squeeze()))
+
 
 	if vtl_vtu_lr:
 		return VTL_series, VTU_series
@@ -6703,6 +6713,3 @@ def write_tracker(cyclone_type,nlats,nlons,npmin,nmws,nclosedp,nroci,nouter_r,nc
 		for k in range(0,len(nlats)):
 			line=ndates[k]+", "+nhours[k].zfill(2)+","+sp[:-len(str(nlats[k])[0:5])]+ str(nlats[k])[0:5]+","+sp[:-len(str(nlons[k])[0:6])]+ str(nlons[k])[0:6]+","+sp[:-len(str(npmin[k])[0:6])]+ str(npmin[k])[0:7]+","+sp[:-len(str(nmws[k])[0:5])]+ str(nmws[k])[0:5]+","+sp[:-len(str(nouter_r[k])[0:7])]+ str(nouter_r[k])[0:7]+","+sp[:-len(str(nclosedp[k])[0:7])]+ str(nclosedp[k])[0:7]+","+sp[:-len(str(nroci[k])[0:7])]+ str(nroci[k])[0:7]+",   " + str(nnctype[k]) +","+ sp[:-len(str(VTU[k])[0:6])]+ str(VTU[k])[0:6]+","+ sp[:-len(str(VTL[k])[0:6])]+ str(VTL[k])[0:6]+","+ sp[:-len(str(Bhart[k])[0:6])]+ str(Bhart[k])[0:6]+","
 			fwrite.write(line+"\n")
-
-
-
